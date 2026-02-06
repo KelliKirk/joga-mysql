@@ -1,20 +1,51 @@
-const express = require('express')
-const path = require('path')
-const hbs = require('express-handlebars')
-const bodyParser = require('body-parser')
+const express = require('express');
+const path = require('path');
+const hbs = require('express-handlebars');
+const articleRoutes = require('../routes/articles');
 
-const app = express()
+class App {
+    constructor(port) {
+        this.port = port;
+        this.app = express();
+        this.bindMethods();
+        this.initViewEngine();  
+        this.initMiddleware();
+        this.initRoutes();
+        this.start();
+    }
+    
+    bindMethods() {
+        this.initViewEngine = this.initViewEngine.bind(this);
+        this.initMiddleware = this.initMiddleware.bind(this);
+        this.initRoutes = this.initRoutes.bind(this);
+        this.start = this.start.bind(this);
+    }
+    
+    initViewEngine() {
+        this.app.set('views', path.join(__dirname, '/../views'));
+        this.app.set('view engine', 'hbs');
+        this.app.engine('hbs', hbs.engine({
+            extname: 'hbs',
+            defaultLayout: 'main',
+            layoutsDir: path.join(__dirname, '/../views/layouts/')
+        }));
+        this.app.use(express.static('public'));
+    }
+    
+    initMiddleware() {
+        this.app.use(express.json());
+        this.app.use(express.urlencoded({ extended: true }));
+    }
+    
+    initRoutes() {
+        this.app.use('/', articleRoutes);
+    }
+    
+    start() {
+        this.app.listen(this.port, () => {
+            console.log(`App listening on port ${this.port}`);
+        });
+    }
+}
 
-app.set('views', path.join(__dirname, '/../views'))
-app.set('view engine', 'hbs')
-app.engine('hbs', hbs.engine ({
-    extname: 'hbs',
-    defaultLayout: 'main',
-    layoutsDir: path.join(__dirname + '/../views/layouts/')
-} ))
-
-
-app.use(express.static('public'))
-app.use(bodyParser.urlencoded({extended: true} ))
-
-module.exports = app
+module.exports = App;

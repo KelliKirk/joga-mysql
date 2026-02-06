@@ -1,8 +1,21 @@
-const express = require('express')
-const router = express.Router()
-const articleController = require('../controllers/articles')
+const express = require('express');
+const ArticleController = require('../controllers/articles');
 
-router.get('/', articleController.getAllArticles)
-router.get('/article/:slug', articleController.getArticleBySlug)
+class ArticleRouter {
+    constructor() {
+        this.router = express.Router();
+        this.controller = ArticleController;
+        this.initRoutes();
+    }
+    
+    initRoutes() {
+        this.router.get('/', this.controller.getAllArticles);
+        this.router.get('/article/:slug', this.controller.getArticleBySlug); 
+    }
+    
+    getRouter() {
+        return this.router;
+    }
+}
 
-module.exports = router
+module.exports = new ArticleRouter().getRouter();
