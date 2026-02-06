@@ -9,8 +9,8 @@ class App {
         this.port = port;
         this.app = express();
         this.bindMethods();
-        this.initViewEngine();  
         this.initMiddleware();
+        this.initViewEngine();  
         this.initRoutes();
         this.start();
     }
