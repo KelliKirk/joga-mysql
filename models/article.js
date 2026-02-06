@@ -10,6 +10,8 @@ class ArticleModel extends BaseSQLModel {
         const results = await this.executeQuery(query, [slug]);
         return results[0];
     }
+
+   
 }
 
 module.exports = new ArticleModel();

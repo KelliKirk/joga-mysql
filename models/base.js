@@ -29,6 +29,12 @@ class BaseSQLModel {
     return results[0];
   }
 
+   async findOne(where, value) {
+    const query = `SELECT * FROM ${this.tableName} WHERE ${where} = ?`;
+    const results = await this.executeQuery(query, [value]);
+    return results[0];
+}
+
   async create(data) {
     const query = `INSERT INTO ${this.tableName} SET ?`;
     const result = await this.executeQuery(query, data);
@@ -46,6 +52,7 @@ class BaseSQLModel {
     const result = await this.executeQuery(query, [id]);
     return result.affectedRows;
   }
+
 }
 
 module.exports = BaseSQLModel;
