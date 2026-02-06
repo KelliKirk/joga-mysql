@@ -12,7 +12,7 @@ class ArticleRouter {
         this.router.get('/', this.controller.getAllArticles);
         this.router.get('/article/:slug', this.controller.getArticleBySlug); 
         this.router.post('/article/create', this.controller.createArticle)
-        console.log('POST route registered: /article/create');
+        this.router.put('/article/edit/:id', this.controller.updateArticle)
     }
     
     getRouter() {

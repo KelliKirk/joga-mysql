@@ -60,6 +60,34 @@ class ArticleController {
         res.status(500).json({ error: error.message });
     }
 }
+
+    async updateArticle(req, res) {
+        try {
+            const articleId = req.params.id;  // Võtame ID URL-ist
+            
+            const articleData = {
+                name: req.body.name,
+                slug: req.body.slug,
+                image: req.body.image,
+                body: req.body.body,
+                author_id: req.body.author_id
+            };
+            
+            const affectedRows = await this.model.update(articleId, articleData);
+            
+            if (affectedRows === 0) {
+                return res.status(404).json({ error: 'Artiklit ei leitud' });
+            }
+            
+            res.status(200).json({ 
+                message: 'Artikkel edukalt uuendatud',
+                id: articleId 
+            });
+        } catch (error) {
+            console.error('Error:', error);
+            res.status(500).json({ error: error.message });
+        }
+    }
 }
 
 module.exports = new ArticleController();
