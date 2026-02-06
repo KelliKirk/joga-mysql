@@ -2,6 +2,7 @@ const express = require('express');
 const path = require('path');
 const hbs = require('express-handlebars');
 const articleRoutes = require('../routes/articles');
+const authorRoutes = require('../routes/author')
 
 class App {
     constructor(port) {
@@ -39,6 +40,7 @@ class App {
     
     initRoutes() {
         this.app.use('/', articleRoutes);
+        this.app.use('/author', authorRoutes);
     }
     
     start() {

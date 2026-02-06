@@ -11,7 +11,9 @@ class ArticleModel extends BaseSQLModel {
         return results[0];
     }
 
-   
+    async findMany(where, value) {
+        return await super.findMany(where, value);
+    }  
 }
 
 module.exports = new ArticleModel();
