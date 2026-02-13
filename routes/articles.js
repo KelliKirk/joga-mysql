@@ -10,9 +10,10 @@ class ArticleRouter {
     
     initRoutes() {
         this.router.get('/', this.controller.getAllArticles);
-        this.router.get('/article/:slug', this.controller.getArticleBySlug); 
+        this.router.get('/article/:slug', this.controller.getArticleBySlug)
         this.router.post('/article/create', this.controller.createArticle)
         this.router.put('/article/edit/:id', this.controller.updateArticle)
+        this.router.delete('/article/delete/:id', this.controller.deleteArticle)
     }
     
     getRouter() {

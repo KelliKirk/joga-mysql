@@ -7,6 +7,7 @@ class ArticleController {
         this.getArticleBySlug = this.getArticleBySlug.bind(this);
         this.createArticle = this.createArticle.bind(this);
         this.updateArticle = this.updateArticle.bind(this);
+        this.deleteArticle = this.deleteArticle.bind(this);
     }
     
     async getAllArticles(req, res) {
@@ -82,6 +83,26 @@ class ArticleController {
             
             res.status(200).json({ 
                 message: 'Artikkel edukalt uuendatud',
+                id: articleId 
+            });
+        } catch (error) {
+            console.error('Error:', error);
+            res.status(500).json({ error: error.message });
+        }
+    }
+
+    async deleteArticle(req, res) {
+        try {
+            const articleId = req.params.id; 
+            
+            const affectedRows = await this.model.delete(articleId);
+            
+            if (affectedRows === 0) {
+                return res.status(404).json({ error: 'Artiklit ei leitud' });
+            }
+            
+            res.status(200).json({ 
+                message: 'Artikkel edukalt kustutatud',
                 id: articleId 
             });
         } catch (error) {
