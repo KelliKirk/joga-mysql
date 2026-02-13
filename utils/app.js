@@ -1,8 +1,10 @@
 const express = require('express');
 const path = require('path');
 const hbs = require('express-handlebars');
+const session = require('express-session');  
 const articleRoutes = require('../routes/articles');
-const authorRoutes = require('../routes/author')
+const authorRoutes = require('../routes/author');
+const userRoutes = require('../routes/users');
 
 class App {
     constructor(port) {
@@ -36,11 +38,23 @@ class App {
     initMiddleware() {
         this.app.use(express.json());
         this.app.use(express.urlencoded({ extended: true }));
+        
+        // Session middleware
+        this.app.use(session({
+            secret: 'your-secret-key-here',  // Muuda see juhuslikuks stringiks
+            resave: false,
+            saveUninitialized: false,
+            cookie: { 
+                secure: false,  // true kui kasutad HTTPS-i
+                maxAge: 1000 * 60 * 60 * 24  // 24 tundi
+            }
+        }));
     }
     
     initRoutes() {
         this.app.use('/', articleRoutes);
         this.app.use('/author', authorRoutes);
+        this.app.use('/user', userRoutes); 
     }
     
     start() {

@@ -11,11 +11,13 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "bcrypt": "^6.0.0",
     "colors": "^1.4.0",
     "cors": "^2.8.6",
     "dotenv": "^17.2.3",
     "express": "^4.22.1",
     "express-handlebars": "^8.0.5",
+    "express-session": "^1.19.0",
     "morgan": "^1.10.1",
     "mysql": "^2.18.1",
     "mysql2": "^3.16.3"
