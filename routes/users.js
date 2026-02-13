@@ -9,7 +9,14 @@ class UserRouter {
     }
     
     initRoutes() {
+        // Vormide kuvamine
+        this.router.get('/register', this.controller.showRegisterForm);
+        this.router.get('/login', this.controller.showLoginForm);
+        
+        // API endpoints
         this.router.post('/register', this.controller.register);
+        this.router.post('/login', this.controller.login);
+        this.router.get('/logout', this.controller.logout);
     }
     
     getRouter() {

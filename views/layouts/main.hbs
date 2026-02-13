@@ -12,6 +12,16 @@
     <header>
         <a href="/">Yoga Blog</a>
         <hr>
+        <nav style="font-size: 60%; margin-top: 12px;">
+            <a href="/" style="margin: 0 12px;">Avaleht</a>
+            {{#if user}}
+            <span style="margin: 0 12px;">Tere, {{user.username}}!</span>
+            <a href="/user/logout" style="margin: 0 12px;">Logi välja</a>
+        {{else}}
+            <a href="/user/register" style="margin: 0 12px;">Registreeru</a>
+            <a href="/user/login" style="margin: 0 12px;">Logi sisse</a>
+        {{/if}}
+        </nav>
     </header>
     {{#msg}}<div class="alert">{{.}}</div>{{/msg}}
     <main>

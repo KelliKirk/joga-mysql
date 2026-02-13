@@ -1,0 +1,18 @@
+<main>
+    <h1>Sisselogimine</h1>
+    
+    {{#if error}}
+    <div class="alert">{{error}}</div>
+    {{/if}}
+
+    <form action="/user/login" method="POST">
+        <label for="username">Kasutajanimi *</label>
+        <input type="text" id="username" name="username" required>
+
+        <label for="password">Parool *</label>
+        <input type="password" id="password" name="password" required>
+
+        <button type="submit">Logi sisse</button>
+        <p style="margin-top: 12px;">Pole veel kontot? <a href="/user/register">Registreeru</a></p>
+    </form>
+</main>

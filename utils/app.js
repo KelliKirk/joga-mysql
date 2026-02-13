@@ -18,8 +18,8 @@ class App {
     }
     
     bindMethods() {
-        this.initViewEngine = this.initViewEngine.bind(this);
         this.initMiddleware = this.initMiddleware.bind(this);
+        this.initViewEngine = this.initViewEngine.bind(this);
         this.initRoutes = this.initRoutes.bind(this);
         this.start = this.start.bind(this);
     }

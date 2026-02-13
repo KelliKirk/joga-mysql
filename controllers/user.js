@@ -1,40 +1,173 @@
-const bcrypt = require('bcrypt')
-const userModel = require('../models/users')
+const bcrypt = require('bcrypt');
+const userModel = require('../models/users');
 
 class userController {
-
-      constructor() {
-        this.register = this.register.bind(this);  
+    constructor() {
+        this.register = this.register.bind(this);
+        this.login = this.login.bind(this);
+        this.logout = this.logout.bind(this);
+        this.showRegisterForm = this.showRegisterForm.bind(this);
+        this.showLoginForm = this.showLoginForm.bind(this);
     }
 
-    async register(req, res){
+    showRegisterForm(req, res) {
+        res.render('register', { 
+            title: 'Registreerimine',
+            error: null 
+        });
+    }
 
-        // Kontrolli, et kõik väljad on olemas
-        if (!req.body.username || !req.body.email || !req.body.password) {
-            return res.status(400).json({ 
-                error: 'Kõik väljad on kohustuslikud' 
+    showLoginForm(req, res) {
+        res.render('login', { 
+            title: 'Sisselogimine',
+            error: null 
+        });
+    }
+
+    async register(req, res) {
+        try {
+            const { username, email, password, confirmPassword } = req.body;
+            
+            // Kontrollid
+            if (!username || !email || !password || !confirmPassword) {
+                return res.render('register', {
+                    title: 'Registreerimine',
+                    error: 'Kõik väljad on kohustuslikud'
+                });
+            }
+
+            if (username.length < 3) {
+                return res.render('register', {
+                    title: 'Registreerimine',
+                    error: 'Kasutajanimi peab olema vähemalt 3 tähemärki pikk'
+                });
+            }
+
+            const existingUserByUsername = await userModel.findByUsername(username);
+            if (existingUserByUsername) {
+                return res.render('register', {
+                    title: 'Registreerimine',
+                    error: 'See kasutajanimi on juba kasutusel'
+                });
+            }
+
+            const existingUserByEmail = await userModel.findByEmail(email);
+            if (existingUserByEmail) {
+                return res.render('register', {
+                    title: 'Registreerimine',
+                    error: 'See email on juba registreeritud'
+                });
+            }
+
+            if (password.length < 8) {
+                return res.render('register', {
+                    title: 'Registreerimine',
+                    error: 'Parool peab olema vähemalt 8 tähemärki pikk'
+                });
+            }
+
+            const hasUpperCase = /[A-Z]/.test(password);
+            const hasLowerCase = /[a-z]/.test(password);
+            const hasNumber = /[0-9]/.test(password);
+            
+            if (!hasUpperCase || !hasLowerCase || !hasNumber) {
+                return res.render('register', {
+                    title: 'Registreerimine',
+                    error: 'Parool peab sisaldama vähemalt ühte suurtähte, väiketähte ja numbrit'
+                });
+            }
+
+            if (password !== confirmPassword) {
+                return res.render('register', {
+                    title: 'Registreerimine',
+                    error: 'Paroolid ei kattu'
+                });
+            }
+
+            const cryptPassword = await bcrypt.hash(password, 10);
+            
+            const registeredId = await userModel.create({
+                username: username,
+                email: email,
+                password: cryptPassword
+            });
+
+            if (registeredId) {
+                const userData = await userModel.findById(registeredId);
+                req.session.user = {
+                    username: userData.username,
+                    user_id: userData.id,
+                    email: userData.email
+                };
+                
+                // Redirect avalehele pärast edukat registreerimist
+                res.redirect('/');
+            }
+        } catch (error) {
+            console.error('Register Error:', error);
+            res.render('register', {
+                title: 'Registreerimine',
+                error: 'Midagi läks valesti. Palun proovi uuesti.'
             });
         }
+    }
 
-        const cryptPassword = await bcrypt.hash(req.body.password, 10)
-        const registeredId = await userModel.create ({
-            username: req.body.username,
-            email: req.body.email,
-            password: cryptPassword
-        } )
+    async login(req, res) {
+        try {
+            const { username, password } = req.body;
+            
+            if (!username || !password) {
+                return res.render('login', {
+                    title: 'Sisselogimine',
+                    error: 'Kasutajanimi ja parool on kohustuslikud'
+                });
+            }
 
-        if (registeredId){
-            const userData = await userModel.findById(registeredId)
+            const user = await userModel.findByUsername(username);
+            
+            if (!user) {
+                return res.render('login', {
+                    title: 'Sisselogimine',
+                    error: 'Vale kasutajanimi või parool'
+                });
+            }
+
+            const passwordMatch = await bcrypt.compare(password, user.password);
+            
+            if (!passwordMatch) {
+                return res.render('login', {
+                    title: 'Sisselogimine',
+                    error: 'Vale kasutajanimi või parool'
+                });
+            }
+
             req.session.user = {
-                username: userData.username,
-                user_id: userData.id
-            } 
-            res.json ({
-                message: 'Uus kasutaja on loodud.',
-                user_session: req.session.user
-            } )
-        } 
-    } 
+                username: user.username,
+                user_id: user.id,
+                email: user.email
+            };
+
+        console.log('Session created:', req.session.user);
+
+        res.redirect('/');
+            
+        } catch (error) {
+            console.error('Login Error:', error);
+            res.render('login', {
+                title: 'Sisselogimine',
+                error: 'Midagi läks valesti. Palun proovi uuesti.'
+            });
+        }
+    }
+
+    logout(req, res) {
+        req.session.destroy((err) => {
+            if (err) {
+                console.error('Logout error:', err);
+            }
+            res.redirect('/');
+        });
+    }
 } 
 
-module.exports = new userController()
+module.exports = new userController();
