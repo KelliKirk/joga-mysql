@@ -59,10 +59,10 @@ class userController {
                 });
             }
 
-            if (password.length < 8) {
+            if (password.length < 16) {
                 return res.render('register', {
                     title: 'Registreerimine',
-                    error: 'Parool peab olema vähemalt 8 tähemärki pikk'
+                    error: 'Parool peab olema vähemalt 16 tähemärki pikk'
                 });
             }
 

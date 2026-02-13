@@ -1,0 +1,233 @@
+<main>
+    <h1>Admini paneel</h1>
+    
+    <div id="error-message" class="alert" style="display: none;"></div>
+    <div id="success-message" style="display: none; background-color: #4CAF50; color: #fff; margin: 24px 0; padding: 24px;"></div>
+
+    <!-- Kasutajate haldus -->
+    <div style="margin-bottom: 48px;">
+        <h2>Kasutajate haldus</h2>
+        
+        <div id="usersList">
+            <p>Kasutajate laadimine...</p>
+        </div>
+    </div>
+
+    <!-- Statistika -->
+    <div style="margin-bottom: 48px;">
+        <h2>Statistika</h2>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 24px;">
+            <div style="background-color: #f5f5f5; padding: 24px; border-left: 4px solid #3D518C;">
+                <h3 style="margin: 0; font-size: 120%;">Artikleid</h3>
+                <p style="font-size: 200%; font-weight: bold; margin: 12px 0 0 0;" id="articlesCount">-</p>
+            </div>
+            <div style="background-color: #f5f5f5; padding: 24px; border-left: 4px solid #3D518C;">
+                <h3 style="margin: 0; font-size: 120%;">Kasutajaid</h3>
+                <p style="font-size: 200%; font-weight: bold; margin: 12px 0 0 0;" id="usersCount">-</p>
+            </div>
+            <div style="background-color: #f5f5f5; padding: 24px; border-left: 4px solid #3D518C;">
+                <h3 style="margin: 0; font-size: 120%;">Kommentaare</h3>
+                <p style="font-size: 200%; font-weight: bold; margin: 12px 0 0 0;" id="commentsCount">-</p>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- Kasutaja kustutamise popup -->
+<div id="deleteUserModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); z-index: 1000;">
+    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: white; padding: 30px; border-radius: 5px; max-width: 500px; width: 90%; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+        <h2 style="margin-top: 0;">Kustuta kasutaja</h2>
+        <p id="deleteUserMessage"></p>
+        <div style="display: flex; gap: 12px; margin-top: 24px;">
+            <button class="danger" onclick="deleteUser()">Jah, kustuta</button>
+            <button onclick="closeUserModal()">Tühista</button>
+        </div>
+    </div>
+</div>
+
+<!-- Rolli muutmise popup -->
+<div id="roleModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); z-index: 1000;">
+    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: white; padding: 30px; border-radius: 5px; max-width: 500px; width: 90%; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+        <h2 style="margin-top: 0;">Muuda kasutaja rolli</h2>
+        <p id="roleMessage"></p>
+        
+        <form id="roleForm">
+            <label>
+                <input type="checkbox" id="adminRole" name="admin"> Admin
+            </label>
+        </form>
+        
+        <div style="display: flex; gap: 12px; margin-top: 24px;">
+            <button onclick="saveRole()">Salvesta</button>
+            <button onclick="closeRoleModal()">Tühista</button>
+        </div>
+    </div>
+</div>
+
+<script>
+let userToDelete = null;
+let userToEditRole = null;
+
+// Laadi kasutajad
+async function loadUsers() {
+    try {
+        const response = await fetch('/admin/users');
+        const data = await response.json();
+        
+        const usersList = document.getElementById('usersList');
+        
+        if (data.users && data.users.length > 0) {
+            let html = '<table><thead><tr><th>ID</th><th>Kasutajanimi</th><th>Email</th><th>Rollid</th><th>Tegevused</th></tr></thead><tbody>';
+            
+            data.users.forEach(user => {
+                const roles = user.roles ? user.roles.split(',').join(', ') : 'Tavakasutaja';
+                html += `
+                    <tr>
+                        <td>${user.id}</td>
+                        <td>${user.username}</td>
+                        <td>${user.email}</td>
+                        <td>${roles}</td>
+                        <td>
+                            <button onclick="editRole(${user.id}, '${user.username}', '${user.roles || ''}')" style="font-size: 90%; padding: 6px 12px;">Muuda rolli</button>
+                            <button class="danger" onclick="confirmDeleteUser(${user.id}, '${user.username}')" style="font-size: 90%; padding: 6px 12px;">Kustuta</button>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            html += '</tbody></table>';
+            usersList.innerHTML = html;
+            
+            // Uuenda statistikat
+            document.getElementById('usersCount').textContent = data.users.length;
+        } else {
+            usersList.innerHTML = '<p>Kasutajaid ei leitud.</p>';
+        }
+    } catch (error) {
+        console.error('Error loading users:', error);
+        document.getElementById('usersList').innerHTML = '<p>Kasutajate laadimine ebaõnnestus.</p>';
+    }
+}
+
+// Laadi statistika
+async function loadStats() {
+    try {
+        const response = await fetch('/admin/stats');
+        const data = await response.json();
+        
+        if (data.articles !== undefined) document.getElementById('articlesCount').textContent = data.articles;
+        if (data.comments !== undefined) document.getElementById('commentsCount').textContent = data.comments;
+    } catch (error) {
+        console.error('Error loading stats:', error);
+    }
+}
+
+// Kasutaja kustutamine
+function confirmDeleteUser(userId, username) {
+    userToDelete = userId;
+    document.getElementById('deleteUserMessage').textContent = 
+        `Kas oled kindel, et soovid kasutaja "${username}" kustutada? Kõik tema artiklid ja kommentaarid kustutatakse samuti.`;
+    document.getElementById('deleteUserModal').style.display = 'block';
+}
+
+function closeUserModal() {
+    document.getElementById('deleteUserModal').style.display = 'none';
+    userToDelete = null;
+}
+
+async function deleteUser() {
+    if (!userToDelete) return;
+    
+    try {
+        const response = await fetch(`/admin/user/${userToDelete}`, {
+            method: 'DELETE'
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            showSuccess(data.message);
+            loadUsers();
+        } else {
+            showError(data.error);
+        }
+    } catch (error) {
+        showError('Midagi läks valesti: ' + error.message);
+    }
+    
+    closeUserModal();
+}
+
+// Rolli muutmine
+function editRole(userId, username, currentRoles) {
+    userToEditRole = userId;
+    document.getElementById('roleMessage').textContent = `Muuda kasutaja "${username}" rolle:`;
+    
+    // Märgi olemasolevad rollid
+    const isAdmin = currentRoles && currentRoles.includes('admin');
+    document.getElementById('adminRole').checked = isAdmin;
+    
+    document.getElementById('roleModal').style.display = 'block';
+}
+
+function closeRoleModal() {
+    document.getElementById('roleModal').style.display = 'none';
+    userToEditRole = null;
+}
+
+async function saveRole() {
+    if (!userToEditRole) return;
+    
+    const isAdmin = document.getElementById('adminRole').checked;
+    
+    try {
+        const response = await fetch(`/admin/user/${userToEditRole}/role`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                role: isAdmin ? 'admin' : 'user'
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            showSuccess(data.message);
+            loadUsers();
+            closeRoleModal();
+        } else {
+            showError(data.error);
+        }
+    } catch (error) {
+        showError('Midagi läks valesti: ' + error.message);
+    }
+}
+
+// Sõnumite näitamine
+function showError(message) {
+    const errorDiv = document.getElementById('error-message');
+    errorDiv.textContent = message;
+    errorDiv.style.display = 'block';
+    
+    setTimeout(() => {
+        errorDiv.style.display = 'none';
+    }, 5000);
+}
+
+function showSuccess(message) {
+    const successDiv = document.getElementById('success-message');
+    successDiv.textContent = message;
+    successDiv.style.display = 'block';
+    
+    setTimeout(() => {
+        successDiv.style.display = 'none';
+    }, 5000);
+}
+
+// Laadi andmed lehe avamisel
+loadUsers();
+loadStats();
+</script>

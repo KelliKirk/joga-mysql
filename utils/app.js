@@ -5,6 +5,8 @@ const session = require('express-session');
 const articleRoutes = require('../routes/articles');
 const authorRoutes = require('../routes/author');
 const userRoutes = require('../routes/users');
+const commentRoutes = require('../routes/comments');
+const hbsHelpers = require('./handlebars-helpers'); 
 
 class App {
     constructor(port) {
@@ -30,7 +32,8 @@ class App {
         this.app.engine('hbs', hbs.engine({
             extname: 'hbs',
             defaultLayout: 'main',
-            layoutsDir: path.join(__dirname, '/../views/layouts/')
+            layoutsDir: path.join(__dirname, '/../views/layouts/'),
+            helpers: hbsHelpers
         }));
         this.app.use(express.static('public'));
     }
@@ -55,6 +58,7 @@ class App {
         this.app.use('/', articleRoutes);
         this.app.use('/author', authorRoutes);
         this.app.use('/user', userRoutes); 
+        this.app.use('/', commentRoutes)
     }
     
     start() {

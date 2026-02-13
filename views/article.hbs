@@ -1,9 +1,185 @@
-{{#article}}
-<article>
-    <h1>{{name}} </h1>
-    <p>{{published}} </p>
-    <p>{{author_name}} </p>
-    <p><img src="/images/{{image}}"></p>
-  {{{body}}}
-</article>
-{{/article}}
+<main>
+    <p class="breadcrumbs">
+        <a href="/">Avaleht</a> / {{article.name}}
+    </p>
+
+    <h1>{{article.name}}</h1>
+    
+    {{#if article.image}}
+    <img src="/images/{{article.image}}" alt="{{article.name}}">
+    {{/if}}
+
+    <div style="margin: 24px 0;">
+        {{article.body}}
+    </div>
+
+    <!-- Admin või artikli autori nupud -->
+    {{#if user}}
+        {{#if (or (eq user.user_id article.author_id) user.is_admin)}}
+        <div style="margin: 24px 0; padding: 24px; background-color: #f5f5f5; border-left: 4px solid #3D518C;">
+            <h3 style="margin-top: 0;">Haldus</h3>
+            <div style="display: flex; gap: 12px;">
+                <a href="/article/edit/{{article.id}}">
+                    <button type="button">Muuda artiklit</button>
+                </a>
+                <button type="button" class="danger" onclick="confirmDeleteArticle({{article.id}}, '{{article.name}}')">
+                    Kustuta artikkel
+                </button>
+            </div>
+        </div>
+        {{/if}}
+    {{/if}}
+
+    <!-- Kommentaaride sektsioon -->
+    <div style="margin-top: 48px; border-top: 2px solid #eee; padding-top: 24px;">
+        <h2>Kommentaarid</h2>
+
+        <!-- Kommenteerimise vorm (ainult sisselogitud kasutajatele) -->
+        {{#if user}}
+        <div style="background-color: #f9f9f9; padding: 24px; margin-bottom: 24px;">
+            <h3 style="margin-top: 0;">Lisa kommentaar</h3>
+            <div id="comment-error" class="alert" style="display: none;"></div>
+            <div id="comment-success" style="display: none; background-color: #4CAF50; color: #fff; margin-bottom: 24px; padding: 24px;"></div>
+            
+            <form id="commentForm">
+                <textarea id="commentBody" name="body" required placeholder="Kirjuta oma kommentaar siia..."></textarea>
+                <button type="submit">Lisa kommentaar</button>
+            </form>
+        </div>
+        {{else}}
+        <p><a href="/user/login">Logi sisse</a>, et kommenteerida.</p>
+        {{/if}}
+
+        <!-- Kommentaaride loend -->
+        <div id="commentsList">
+            <p>Kommentaaride laadimine...</p>
+        </div>
+    </div>
+</main>
+
+<!-- Artikli kustutamise popup -->
+<div id="deleteArticleModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); z-index: 1000;">
+    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: white; padding: 30px; border-radius: 5px; max-width: 500px; width: 90%; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+        <h2 style="margin-top: 0;">Kustuta artikkel</h2>
+        <p id="deleteArticleMessage"></p>
+        <div style="display: flex; gap: 12px; margin-top: 24px;">
+            <button class="danger" onclick="deleteArticle()">Jah, kustuta</button>
+            <button onclick="closeArticleModal()">Tühista</button>
+        </div>
+    </div>
+</div>
+
+<script>
+const articleId = {{article.id}};
+let articleToDelete = null;
+
+// Laadi kommentaarid
+async function loadComments() {
+    try {
+        const response = await fetch(`/article/${articleId}/comments`);
+        const data = await response.json();
+        
+        const commentsList = document.getElementById('commentsList');
+        
+        if (data.comments && data.comments.length > 0) {
+            let html = '';
+            data.comments.forEach(comment => {
+                html += `
+                    <div style="border-left: 3px solid #3D518C; padding-left: 16px; margin-bottom: 24px;">
+                        <p style="margin: 0; font-weight: bold;">${comment.username || 'Kasutaja'}</p>
+                        <p style="margin: 8px 0; font-size: 90%; color: #666;">${comment.date_created ? new Date(comment.date_created).toLocaleString('et-EE', {year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'}) : 'Kuupäev teadmata'}</p>
+                        <p style="margin: 8px 0;">${comment.body}</p>
+                    </div>
+                `;
+            });
+            commentsList.innerHTML = html;
+        } else {
+            commentsList.innerHTML = '<p>Kommentaare pole veel lisatud.</p>';
+        }
+    } catch (error) {
+        console.error('Error loading comments:', error);
+        document.getElementById('commentsList').innerHTML = '<p>Kommentaaride laadimine ebaõnnestus.</p>';
+    }
+}
+
+// Lisa kommentaar
+{{#if user}}
+document.getElementById('commentForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const errorDiv = document.getElementById('comment-error');
+    const successDiv = document.getElementById('comment-success');
+    errorDiv.style.display = 'none';
+    successDiv.style.display = 'none';
+
+    const body = document.getElementById('commentBody').value;
+
+    try {
+        const response = await fetch('/comment/create', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                article_id: articleId,
+                body: body
+            })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            successDiv.textContent = data.message;
+            successDiv.style.display = 'block';
+            document.getElementById('commentBody').value = '';
+            loadComments(); // Laadi kommentaarid uuesti
+        } else {
+            errorDiv.textContent = data.error;
+            errorDiv.style.display = 'block';
+        }
+    } catch (error) {
+        errorDiv.textContent = 'Midagi läks valesti. Palun proovi uuesti.';
+        errorDiv.style.display = 'block';
+    }
+});
+{{/if}}
+
+// Artikli kustutamine
+function confirmDeleteArticle(id, name) {
+    articleToDelete = id;
+    document.getElementById('deleteArticleMessage').textContent = 
+        `Kas oled kindel, et soovid artikli "${name}" kustutada? Kõik kommentaarid kustutatakse samuti.`;
+    document.getElementById('deleteArticleModal').style.display = 'block';
+}
+
+function closeArticleModal() {
+    document.getElementById('deleteArticleModal').style.display = 'none';
+    articleToDelete = null;
+}
+
+async function deleteArticle() {
+    if (!articleToDelete) return;
+    
+    try {
+        const response = await fetch(`/article/delete/${articleToDelete}`, {
+            method: 'DELETE'
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            alert(data.message);
+            window.location.href = '/';
+        } else {
+            alert('Viga: ' + data.error);
+        }
+    } catch (error) {
+        alert('Midagi läks valesti: ' + error.message);
+    }
+    
+    closeArticleModal();
+}
+
+// Laadi kommentaarid lehe avamisel
+loadComments();
+</script>

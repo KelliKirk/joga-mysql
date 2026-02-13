@@ -8,6 +8,8 @@ class ArticleController {
         this.createArticle = this.createArticle.bind(this);
         this.updateArticle = this.updateArticle.bind(this);
         this.deleteArticle = this.deleteArticle.bind(this);
+        this.showCreateForm = this.showCreateForm.bind(this);
+        this.showEditForm = this.showEditForm.bind(this);
     }
     
     async getAllArticles(req, res) {
@@ -42,50 +44,119 @@ class ArticleController {
             res.status(500).json({ error: error.message });
         }
     }
-
+    
+    // Näita artikli loomise vormi
+    showCreateForm(req, res) {
+        res.render('create-article', {  // PARANDATUD: article-create → create-article
+            title: 'Loo uus artikkel',
+            user: req.session.user,
+            error: null
+        });
+    }
+    
     async createArticle(req, res) {
+    try {
+        if (!req.session.user) {
+            return res.status(401).json({ 
+                error: 'Pead olema sisse logitud, et artiklit luua' 
+            });
+        }
+        
+        const articleData = {
+            name: req.body.name,
+            slug: req.body.slug,
+            image: req.body.image,
+            body: req.body.body,
+            author_id: req.session.user.user_id,
+            published: new Date()
+        };
+        
+        const newArticleId = await this.model.create(articleData);
+        
+        if (!newArticleId) {
+            return res.render('create-article', {
+                title: 'Loo uus artikkel',
+                user: req.session.user,
+                error: 'Artikli loomine ebaõnnestus'
+            });
+        }
+        
+        res.redirect(`/article/${req.body.slug}`);
+    } catch (error) {
+        console.error('Error:', error);
+        res.render('create-article', {
+            title: 'Loo uus artikkel',
+            user: req.session.user,
+            error: error.message
+        });
+    }
+}
+    
+    // LISA SEE MEETOD - see puudus täielikult!
+    async showEditForm(req, res) {
         try {
-            const articleData = {
-                name: req.body.name,
-                slug: req.body.slug,
-                image: req.body.image,
-                body: req.body.body,
-                author_id: req.body.author_id,
-                published: req.body.published || new Date()
-            };
+            const articleId = req.params.id;
+            const article = await this.model.findById(articleId);
             
-            const newArticleId = await this.model.create(articleData);
-            
-            if (!newArticleId) {
-                return res.status(500).json({ error: 'Artikli loomine ebaõnnestus' });
+            if (!article) {
+                return res.status(404).send('Artiklit ei leitud');
             }
             
-            res.status(201).json({ 
-                message: 'Artikkel edukalt loodud',
-                id: newArticleId 
+            // Kontrolli õigusi
+            const isAuthor = req.session.user.user_id === article.author_id;
+            const isAdmin = req.session.user.is_admin;
+            
+            if (!isAuthor && !isAdmin) {
+                return res.status(403).send('Sul ei ole õigusi selle artikli muutmiseks');
+            }
+            
+            res.render('edit-article', {
+                title: 'Muuda artiklit',
+                article: article,
+                user: req.session.user,
+                error: null
             });
         } catch (error) {
             console.error('Error:', error);
-            res.status(500).json({ error: error.message });
+            res.status(500).send('Viga artikli laadimisel');
         }
     }
-
+    
     async updateArticle(req, res) {
         try {
             const articleId = req.params.id;
             
+            // Kontrolli omandiõigust
+            const article = await this.model.findById(articleId);
+            if (!article) {
+                return res.status(404).json({ error: 'Artiklit ei leitud' });
+            }
+            
+            const isAuthor = req.session.user.user_id === article.author_id;
+            const isAdmin = req.session.user.is_admin;
+            
+            if (!isAuthor && !isAdmin) {
+                return res.status(403).json({ error: 'Sul ei ole õigusi' });
+            }
+            
             const articleData = {
                 name: req.body.name,
                 slug: req.body.slug,
                 image: req.body.image,
                 body: req.body.body,
-                author_id: req.body.author_id
+                author_id: article.author_id
             };
             
             const affectedRows = await this.model.update(articleId, articleData);
             
             if (affectedRows === 0) {
-                return res.status(404).json({ error: 'Artiklit ei leitud' });
+                return res.status(404).json({ error: 'Artikli uuendamine ebaõnnestus' });
+            }
+            
+            // Kui päring tuli vormist, suuna tagasi artiklile
+            if (req.headers['content-type'] && req.headers['content-type'].includes('application/x-www-form-urlencoded')) {
+                const updatedArticle = await this.model.findById(articleId);
+                return res.redirect(`/article/${updatedArticle.slug}`);
             }
             
             res.status(200).json({ 
@@ -97,10 +168,23 @@ class ArticleController {
             res.status(500).json({ error: error.message });
         }
     }
-
+    
     async deleteArticle(req, res) {
         try {
             const articleId = req.params.id;
+            
+            // Kontrolli omandiõigust
+            const article = await this.model.findById(articleId);
+            if (!article) {
+                return res.status(404).json({ error: 'Artiklit ei leitud' });
+            }
+            
+            const isAuthor = req.session.user.user_id === article.author_id;
+            const isAdmin = req.session.user.is_admin;
+            
+            if (!isAuthor && !isAdmin) {
+                return res.status(403).json({ error: 'Sul ei ole õigusi' });
+            }
             
             const affectedRows = await this.model.delete(articleId);
             
