@@ -6,6 +6,7 @@ class ArticleController {
         this.getAllArticles = this.getAllArticles.bind(this);
         this.getArticleBySlug = this.getArticleBySlug.bind(this);
         this.createArticle = this.createArticle.bind(this);
+        this.updateArticle = this.updateArticle.bind(this);
     }
     
     async getAllArticles(req, res) {
