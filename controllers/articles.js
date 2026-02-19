@@ -15,6 +15,11 @@ class ArticleController {
     async getAllArticles(req, res) {
         try {
             const articles = await this.model.findAll();
+
+            // Authentication debug
+            console.log('User session:', req.session.user);
+            console.log('Is admin?', req.session.user?.is_admin);
+            console.log('Articles:', articles.map(a => ({id: a.id, name: a.name, author_id: a.author_id})));
             
             res.render('index', { 
                 articles: articles,
@@ -47,33 +52,44 @@ class ArticleController {
     
     // Näita artikli loomise vormi
     showCreateForm(req, res) {
-        res.render('create-article', {  // PARANDATUD: article-create → create-article
+        res.render('create-article', {  
             title: 'Loo uus artikkel',
             user: req.session.user,
             error: null
         });
     }
     
-    async createArticle(req, res) {
+ async createArticle(req, res) {
+    console.log('=== CREATE ARTICLE CALLED ===');
+    console.log('Session user:', req.session.user);
+    console.log('Request body:', req.body);
+    
     try {
         if (!req.session.user) {
-            return res.status(401).json({ 
-                error: 'Pead olema sisse logitud, et artiklit luua' 
+            console.log('User not logged in!');
+            return res.render('create-article', {
+                title: 'Loo uus artikkel',
+                user: req.session.user,
+                error: 'Pead olema sisse logitud'
             });
         }
         
         const articleData = {
             name: req.body.name,
             slug: req.body.slug,
-            image: req.body.image,
+            image: req.body.image || '',
             body: req.body.body,
             author_id: req.session.user.user_id,
             published: new Date()
         };
         
+        console.log('Article data to create:', articleData);
+        
         const newArticleId = await this.model.create(articleData);
+        console.log('Created article ID:', newArticleId);
         
         if (!newArticleId) {
+            console.log('Failed to create article!');
             return res.render('create-article', {
                 title: 'Loo uus artikkel',
                 user: req.session.user,
@@ -81,9 +97,11 @@ class ArticleController {
             });
         }
         
-        res.redirect(`/article/${req.body.slug}`);
+        console.log('Redirecting to home page');
+        res.redirect('/');
+        
     } catch (error) {
-        console.error('Error:', error);
+        console.error('Create article error:', error);
         res.render('create-article', {
             title: 'Loo uus artikkel',
             user: req.session.user,
@@ -92,7 +110,6 @@ class ArticleController {
     }
 }
     
-    // LISA SEE MEETOD - see puudus täielikult!
     async showEditForm(req, res) {
         try {
             const articleId = req.params.id;

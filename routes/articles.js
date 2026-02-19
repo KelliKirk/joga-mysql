@@ -12,7 +12,7 @@ class ArticleRouter {
     initRoutes() {
     // Avalikud route'id
     this.router.get('/', this.controller.getAllArticles);
-    this.router.get('/article/:slug', this.controller.getArticleBySlug);
+    
     
     // Sisselogitud kasutajad saavad artikleid luua
     this.router.get('/article/create', 
@@ -48,6 +48,8 @@ class ArticleRouter {
         AuthMiddleware.isAuthenticated,
         this.controller.deleteArticle
     );
+    
+    this.router.get('/article/:slug', this.controller.getArticleBySlug);
 }
 
     getRouter() {

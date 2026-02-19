@@ -1,5 +1,6 @@
 const bcrypt = require('bcrypt');
 const userModel = require('../models/users');
+const userRoleModel = require('../models/userRole');
 
 class userController {
     constructor() {
@@ -113,52 +114,59 @@ class userController {
     }
 
     async login(req, res) {
-        try {
-            const { username, password } = req.body;
-            
-            if (!username || !password) {
-                return res.render('login', {
-                    title: 'Sisselogimine',
-                    error: 'Kasutajanimi ja parool on kohustuslikud'
-                });
-            }
+    try {
+        const { username, password } = req.body;
+        
+        if (!username || !password) {
+            return res.render('login', {
+                title: 'Sisselogimine',
+                error: 'Kasutajanimi ja parool on kohustuslikud'
+            });
+        }
 
-            const user = await userModel.findByUsername(username);
-            
-            if (!user) {
-                return res.render('login', {
-                    title: 'Sisselogimine',
-                    error: 'Vale kasutajanimi või parool'
-                });
-            }
+        const user = await userModel.findByUsername(username);
+        
+        if (!user) {
+            return res.render('login', {
+                title: 'Sisselogimine',
+                error: 'Vale kasutajanimi või parool'
+            });
+        }
 
-            const passwordMatch = await bcrypt.compare(password, user.password);
-            
-            if (!passwordMatch) {
-                return res.render('login', {
-                    title: 'Sisselogimine',
-                    error: 'Vale kasutajanimi või parool'
-                });
-            }
+        const passwordMatch = await bcrypt.compare(password, user.password);
+        
+        if (!passwordMatch) {
+            return res.render('login', {
+                title: 'Sisselogimine',
+                error: 'Vale kasutajanimi või parool'
+            });
+        }
 
-            req.session.user = {
-                username: user.username,
-                user_id: user.id,
-                email: user.email
-            };
+        // Kontrolli, kas kasutaja on admin
+        const isAdmin = await userRoleModel.hasRole(user.id, 'admin');
+        
+        console.log('User ID:', user.id);
+        console.log('Is admin check result:', isAdmin);
+
+        req.session.user = {
+            username: user.username,
+            user_id: user.id,
+            email: user.email,
+            is_admin: isAdmin  
+        };
 
         console.log('Session created:', req.session.user);
 
         res.redirect('/');
-            
-        } catch (error) {
-            console.error('Login Error:', error);
-            res.render('login', {
-                title: 'Sisselogimine',
-                error: 'Midagi läks valesti. Palun proovi uuesti.'
-            });
-        }
+        
+    } catch (error) {
+        console.error('Login Error:', error);
+        res.render('login', {
+            title: 'Sisselogimine',
+            error: 'Midagi läks valesti. Palun proovi uuesti.'
+        });
     }
+}
 
     logout(req, res) {
         req.session.destroy((err) => {

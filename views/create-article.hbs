@@ -24,15 +24,15 @@
         <label for="body">Artikli sisu *</label>
         <textarea id="body" name="body" required></textarea>
 
-        <input type="hidden" name="author_id" value="{{user.user_id}}">
-
-        <button type="submit" title="Loo artikkel" aria-label="Loo artikkel">
+        <div style="display: flex; gap: 12px; margin-top: 24px;">
+            <button type="submit" style="z-index: 1000; position: relative;" title="Loo artikkel" aria-label="Loo artikkel">
     <i class="fas fa-save"></i>
 </button>
-<a href="/">
-    <button type="button" title="Tühista" aria-label="Tühista">
-        <i class="fas fa-times"></i>
-    </button>
-</a>
+            <a href="/">
+                <button type="button" title="Tühista" aria-label="Tühista">
+                    <i class="fas fa-times"></i>
+                </button>
+            </a>
+        </div>
     </form>
 </main>
