@@ -5,6 +5,7 @@ const session = require('express-session');
 const articleRoutes = require('../routes/articles');
 const authorRoutes = require('../routes/author');
 const userRoutes = require('../routes/users');
+const adminRoutes = require('../routes/admin');
 const commentRoutes = require('../routes/comments');
 const hbsHelpers = require('./handlebars-helpers'); 
 
@@ -58,6 +59,7 @@ class App {
         this.app.use('/', articleRoutes);
         this.app.use('/author', authorRoutes);
         this.app.use('/user', userRoutes); 
+        this.app.use('/admin', adminRoutes);
         this.app.use('/', commentRoutes)
     }
     

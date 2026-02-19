@@ -5,20 +5,6 @@ class userRoleModel extends BaseSQLModel {
         super('user_role');
     }
     
-    async assignRole(userId, roleId) {
-        const data = {
-            user_id: userId,
-            role_id: roleId
-        };
-        return await super.create(data);
-    }
-    
-    async removeRole(userId, roleId) {
-        const query = `DELETE FROM ${this.tableName} WHERE user_id = ? AND role_id = ?`;
-        const result = await this.executeQuery(query, [userId, roleId]);
-        return result.affectedRows;
-    }
-    
     async getUserRoles(userId) {
         const query = `
             SELECT r.id, r.name, r.description
@@ -39,6 +25,40 @@ class userRoleModel extends BaseSQLModel {
         `;
         const results = await this.executeQuery(query, [userId, roleName]);
         return results[0].count > 0;
+    }
+    
+    async addRole(userId, roleName) {
+        const roleQuery = 'SELECT id FROM role WHERE name = ?';
+        const roleResult = await this.executeQuery(roleQuery, [roleName]);
+        
+        if (!roleResult || roleResult.length === 0) {
+            throw new Error(`Roll "${roleName}" ei leitud`);
+        }
+        
+        const roleId = roleResult[0].id;
+        
+        const hasRoleAlready = await this.hasRole(userId, roleName);
+        if (hasRoleAlready) {
+            return;
+        }
+        
+        const data = { user_id: userId, role_id: roleId };
+        return await super.create(data);
+    }
+    
+    async removeRole(userId, roleName) {
+        const roleQuery = 'SELECT id FROM role WHERE name = ?';
+        const roleResult = await this.executeQuery(roleQuery, [roleName]);
+        
+        if (!roleResult || roleResult.length === 0) {
+            throw new Error(`Roll "${roleName}" ei leitud`);
+        }
+        
+        const roleId = roleResult[0].id;
+        
+        const query = `DELETE FROM ${this.tableName} WHERE user_id = ? AND role_id = ?`;
+        const result = await this.executeQuery(query, [userId, roleId]);
+        return result.affectedRows;
     }
 }
 
